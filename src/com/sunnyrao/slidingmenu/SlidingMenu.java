@@ -1,5 +1,7 @@
 package com.sunnyrao.slidingmenu;
 
+import com.nineoldandroids.view.ViewHelper;
+
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.util.AttributeSet;
@@ -19,10 +21,11 @@ public class SlidingMenu extends HorizontalScrollView {
 	private int mScreenWidth;
 	private int mMenuWidth;
 	private int mMenuRightPadding = 50; // dp
-	private boolean once = false;
+	private boolean once;
+	private boolean isOpen;
 
 	/**
-	 * 未使用自定义属性时调用
+	 * 使用自定义属性时调用
 	 */
 	public SlidingMenu(Context context, AttributeSet attrs) {
 		this(context, attrs, 0);
@@ -86,6 +89,7 @@ public class SlidingMenu extends HorizontalScrollView {
 		super.onLayout(changed, l, t, r, b);
 		if (changed) {
 			this.scrollTo(mMenuWidth, 0);
+			isOpen = false;
 		}
 	}
 
@@ -98,12 +102,64 @@ public class SlidingMenu extends HorizontalScrollView {
 			int scrollX = getScrollX();
 			if (scrollX >= mMenuWidth / 2) {
 				this.smoothScrollTo(mMenuWidth, 0);
+				isOpen = false;
 			} else {
 				this.smoothScrollTo(0, 0);
+				isOpen = true;
 			}
 			return true;
 		}
 		return super.onTouchEvent(ev);
 	}
 
+	@Override
+	protected void onScrollChanged(int l, int t, int oldl, int oldt) {
+		super.onScrollChanged(l, t, oldl, oldt);
+		float scale = l * 1.0f / mMenuWidth; // 1 ~ 0
+		float rightScale = 0.7f + 0.3f * scale; // 1.0 ~ 0.7
+		float leftScale = 1.0f - scale * 0.3f; // 0.7 ~ 1.0
+		float leftAlpha = 1.0f - scale * 0.4f; // 0.6 ~ 1.0
+		// 调用属性动画，设置TranslationX
+		ViewHelper.setTranslationX(mMenu, mMenuWidth * scale * 0.8f);
+		ViewHelper.setScaleX(mMenu, leftScale);
+		ViewHelper.setScaleY(mMenu, leftScale);
+		ViewHelper.setAlpha(mMenu, leftAlpha);
+		// 设置content的缩放的中心点
+		ViewHelper.setPivotX(mContent, 0);
+		ViewHelper.setPivotY(mContent, mContent.getHeight() / 2);
+		ViewHelper.setScaleX(mContent, rightScale);
+		ViewHelper.setScaleY(mContent, rightScale);
+
+	}
+
+	/**
+	 * 打开菜单
+	 */
+	public void openMenu() {
+		if (!isOpen) {
+			this.smoothScrollTo(0, 0);
+			isOpen = true;
+		}
+	}
+
+	/**
+	 * 关闭菜单
+	 */
+	public void closeMenu() {
+		if (isOpen) {
+			this.smoothScrollTo(mMenuWidth, 0);
+			isOpen = false;
+		}
+	}
+
+	/**
+	 * 切换菜单
+	 */
+	public void toggleMenu() {
+		if (isOpen) {
+			closeMenu();
+		} else {
+			openMenu();
+		}
+	}
 }
